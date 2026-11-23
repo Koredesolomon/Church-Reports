@@ -5,7 +5,9 @@ import { dueDate, longDate, monthLabel } from "@/lib/periods";
 import { chipFor, getAttachments, getReport, KIND_TITLE, fmtSize } from "@/lib/reports";
 import { UUID } from "@/lib/action-utils";
 import ActionForm from "@/components/action-form";
+import FileInput from "@/components/file-input";
 import PeopleEditor from "@/components/people-editor";
+import { MAX_UPLOAD_LABEL } from "@/lib/limits";
 import ReportView from "@/components/report-view";
 import { Chip } from "@/components/ui";
 import { removeAttachment, saveReport } from "../actions";
@@ -101,9 +103,9 @@ export default async function ReportPage({ params }: PageProps<"/reports/[id]">)
             <div className="flex flex-col gap-2.5">
               <label htmlFor="files" className="lbl">{report.kind === "financial" ? "Bank statement or ledger" : "Attachments (optional)"}</label>
               <div className="rounded-[10px] border-[1.5px] border-dashed border-[#9aa0bc] bg-[#fafafd] p-5">
-                <input id="files" name="files" type="file" multiple accept=".pdf,.xls,.xlsx,.csv,.png,.jpg,.jpeg,.gif,.webp" className="w-full text-[15px]" />
+                <FileInput id="files" name="files" />
               </div>
-              <span className="hint">PDF, Excel or images, up to 10 MB each. Files are attached when you save or submit.</span>
+              <span className="hint">PDF, Excel or images, up to {MAX_UPLOAD_LABEL} at a time. Files are attached when you save or submit. To add more, save and attach again.</span>
               {attachments.map((a) => (
                 <div key={a.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-line px-3.5 py-2.5 text-sm">
                   <span className="font-medium"><a href={`/files/${a.id}`}>{a.filename}</a> <span className="font-normal text-muted">· {fmtSize(a.size)}</span></span>

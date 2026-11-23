@@ -37,9 +37,9 @@ export type ReportRow = {
 
 const SELECT = sql`
   SELECT r.id, r.department_id, d.name AS department, r.period, r.kind, r.status, r.data,
-         u.name AS submitted_by_name, to_char(r.submitted_at, 'YYYY-MM-DD') AS submitted_at,
-         to_char(r.reviewed_at, 'YYYY-MM-DD') AS reviewed_at, r.review_comment,
-         to_char(r.updated_at, 'YYYY-MM-DD HH24:MI') AS updated_at,
+         u.name AS submitted_by_name, to_char(lagos(r.submitted_at), 'YYYY-MM-DD') AS submitted_at,
+         to_char(lagos(r.reviewed_at), 'YYYY-MM-DD') AS reviewed_at, r.review_comment,
+         to_char(lagos(r.updated_at), 'YYYY-MM-DD HH24:MI') AS updated_at,
          (SELECT count(*)::int FROM report_attachments a WHERE a.report_id = r.id) AS file_count
   FROM reports r JOIN departments d ON d.id = r.department_id LEFT JOIN users u ON u.id = r.submitted_by`;
 
@@ -134,6 +134,6 @@ export async function headOf(departmentId: string): Promise<string | null> {
  * Earlier months show as not tracked, so a new install doesn't open with a wall of Late.
  */
 export async function trackingStart(): Promise<string> {
-  const [r] = await sql<{ m: string }[]>`SELECT to_char(date_trunc('month', min(created_at)), 'YYYY-MM-01') AS m FROM users`;
+  const [r] = await sql<{ m: string }[]>`SELECT to_char(date_trunc('month', lagos(min(created_at))), 'YYYY-MM-01') AS m FROM users`;
   return addMonths(r?.m ?? "1970-01-01", -1);
 }

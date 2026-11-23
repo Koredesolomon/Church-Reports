@@ -1,6 +1,9 @@
 /** Shown in the sidebar and sign-in screen. Change this to your church's name. */
 export const CHURCH_NAME = "Data Base";
 
+/** All dates and times are worked out in this timezone, whatever timezone the server runs in (Vercel runs in UTC). */
+export const APP_TIMEZONE = "Africa/Lagos";
+
 /** Reports are due on this day of the month after the one being reported. */
 export const DUE_DAY = 5;
 

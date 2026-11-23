@@ -48,7 +48,7 @@ export default async function Members({ searchParams }: PageProps<"/members">) {
     ? await sql<(Row & { gender: string | null; date_of_birth: string | null; marital_status: string | null; phone: string; email: string | null; address: string | null;
         kin_name: string | null; kin_phone: string | null; baptised: boolean | null; notes: string | null; updated_at: string; editor: string | null })[]>`
         SELECT m.id, m.member_no, m.first_name, m.last_name, m.status, m.date_joined, m.gender, m.date_of_birth, m.marital_status, m.phone, m.email, m.address,
-          m.kin_name, m.kin_phone, m.baptised, m.notes, to_char(m.updated_at, 'YYYY-MM-DD') AS updated_at, u.name AS editor,
+          m.kin_name, m.kin_phone, m.baptised, m.notes, to_char(lagos(m.updated_at), 'YYYY-MM-DD') AS updated_at, u.name AS editor,
           (SELECT string_agg(dp.name, ', ' ORDER BY dp.sort_order) FROM member_departments md JOIN departments dp ON dp.id = md.department_id WHERE md.member_id = m.id) AS departments
         FROM members m LEFT JOIN users u ON u.id = m.updated_by
         WHERE m.id = ${selId} ${d ? sql`AND EXISTS (SELECT 1 FROM member_departments x WHERE x.member_id = m.id AND x.department_id = ${d})` : sql``}`

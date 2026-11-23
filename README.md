@@ -1,36 +1,65 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Data Base: church report system
 
-## Getting Started
+Monthly department reports with a review workflow, a member database and an archive.
+Built with Next.js (App Router), React, Tailwind and PostgreSQL.
 
-First, run the development server:
+- **Admin** reviews and approves reports, chases late departments, manages members and registers users.
+- **Department heads** (one per department) fill in and submit their monthly report.
+- **Leadership** has a read-only dashboard, archive and member list.
+
+There is no public sign-up: the admin registers every user and gives them a temporary password.
+Department heads and leadership sign in at `/login`; the administrator signs in at `/admin`.
+
+## Run it locally
+
+You need Node 20+ and a PostgreSQL database (a Docker/OrbStack container is fine):
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+docker run -d --name churchdb --restart unless-stopped -e POSTGRES_PASSWORD=postgres \
+  -e POSTGRES_DB=church_reports -p 5432:5432 -v churchdb-data:/var/lib/postgresql/data postgres:17
+
+cp .env.example .env.local     # then set ADMIN_USERNAME and ADMIN_PASSWORD
+npm install
+npm run db:migrate             # create the tables and the 15 departments
+npm run db:admin               # create the admin from ADMIN_* in .env.local
+npm run dev                    # http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Change the church's name in `src/lib/config.ts` (`CHURCH_NAME`) and the Instagram link (`INSTAGRAM_URL`).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Production (Neon + Vercel)
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+1. **Database.** Create a Neon project. Put its **direct** connection string in `.env.production.local`
+   (git-ignored) as `DATABASE_URL`, plus `ADMIN_NAME`, `ADMIN_USERNAME` and a **long** `ADMIN_PASSWORD`
+   (see `.env.example`). Then run:
 
-## Learn More
+   ```bash
+   npm run db:migrate:prod
+   npm run db:admin:prod
+   ```
 
-To learn more about Next.js, take a look at the following resources:
+   Run `db:migrate:prod` again after pulling any change that adds a file to `db/migrations/`.
+   To change the admin password later, edit `ADMIN_PASSWORD` and run `db:admin:prod` again.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+2. **Vercel.** Import this repository and set one environment variable:
+   `DATABASE_URL` = Neon's **pooled** connection string (the host contains `-pooler`).
+   Pick the region closest to the database. Deploy, then sign in at `/admin`.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Good to know
 
-## Deploy on Vercel
+- **Timezone.** Dates and times are worked out in `Africa/Lagos` (`APP_TIMEZONE` in `src/lib/config.ts`),
+  whatever timezone the server runs in. Reports for a month are due on the 5th of the next month.
+- **Attachments** are stored in the database and limited to 4 MB per save (Vercel's request limit).
+  Larger files would need object storage such as Vercel Blob (`src/lib/limits.ts`).
+- **Failed sign-ins** are counted in the database: 5 wrong passwords for one username, or 30 from one address,
+  lock further attempts for 15 minutes.
+- **Roles** are `admin`, `head` and `leadership`. Heads are tied to exactly one department.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Scripts
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+| Command | What it does |
+|---|---|
+| `npm run dev` / `build` / `start` | Next.js development, production build, production server |
+| `npm run db:migrate` / `db:admin` | Migrations and admin bootstrap against `.env.local` |
+| `npm run db:migrate:prod` / `db:admin:prod` | The same against `.env.production.local` |
+| `npm run lint` | ESLint |

@@ -43,7 +43,7 @@ export async function queryArchive(f: ArchiveFilters, opts: { all?: boolean } = 
   const limit = opts.all ? 5000 : PAGE_SIZE;
   const offset = opts.all ? 0 : (f.p - 1) * PAGE_SIZE;
   const rows = await sql<ArchiveRow[]>`
-    SELECT r.id, r.period, d.name AS department, r.kind, r.status, to_char(r.reviewed_at, 'YYYY-MM-DD') AS reviewed_at,
+    SELECT r.id, r.period, d.name AS department, r.kind, r.status, to_char(lagos(r.reviewed_at), 'YYYY-MM-DD') AS reviewed_at,
            (SELECT count(*)::int FROM report_attachments a WHERE a.report_id = r.id) AS file_count
     FROM reports r JOIN departments d ON d.id = r.department_id ${where(f)}
     ORDER BY r.period DESC, d.sort_order LIMIT ${limit} OFFSET ${offset}`;

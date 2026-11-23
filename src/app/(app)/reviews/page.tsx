@@ -17,7 +17,7 @@ export default async function ReviewQueue({ searchParams }: PageProps<"/reviews"
   const sp = await searchParams;
   const m = typeof sp.m === "string" && isPeriod(sp.m) ? sp.m : currentPeriod();
   const rows = await sql<{ id: string; department: string; kind: Kind; status: Status; submitted_at: string | null }[]>`
-    SELECT r.id, d.name AS department, r.kind, r.status, to_char(r.submitted_at, 'YYYY-MM-DD') AS submitted_at
+    SELECT r.id, d.name AS department, r.kind, r.status, to_char(lagos(r.submitted_at), 'YYYY-MM-DD') AS submitted_at
     FROM reports r JOIN departments d ON d.id = r.department_id
     WHERE r.period = ${m} AND r.status <> 'draft'
     ORDER BY CASE r.status WHEN 'submitted' THEN 0 WHEN 'returned' THEN 1 ELSE 2 END, r.submitted_at, d.sort_order`;

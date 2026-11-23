@@ -4,6 +4,7 @@ import { hash, verify } from "@node-rs/argon2";
 import { z } from "zod";
 import { sql } from "@/lib/db";
 import { createSession, destroySession, getCurrentUser } from "@/lib/session";
+import { clearFailures, lockedForMinutes, lockedMessage, loginRules, recordFailure } from "@/lib/throttle";
 
 const schema = z.object({
   username: z.string().trim().min(1),
@@ -22,6 +23,14 @@ export async function login(_: LoginState, formData: FormData): Promise<LoginSta
   if (!parsed.success) return { error: "Enter your username and password." };
   const { username, password, audience } = parsed.data;
 
+  // Locked out after repeated wrong passwords: refuse without even checking the password.
+  const rules = await loginRules(username);
+  const locked = await lockedForMinutes(rules);
+  if (locked > 0) {
+    console.warn(`[login] blocked on /${audience === "admin" ? "admin" : "login"}: username="${username}" (locked for ${locked} more min)`);
+    return { error: lockedMessage(locked) };
+  }
+
   const [user] = await sql<{ id: string; password_hash: string; role: string; active: boolean }[]>`
     SELECT id, password_hash, role, active FROM users WHERE lower(username) = lower(${username})`;
   const ok = await verify(user?.password_hash ?? (await DUMMY_HASH), password).catch(() => false);
@@ -29,6 +38,7 @@ export async function login(_: LoginState, formData: FormData): Promise<LoginSta
     // Server-side diagnostics only: the password is never logged, and the visitor still gets one generic message.
     const why = !user ? "no such username" : !user.active ? "account is deactivated" : "wrong password";
     console.warn(`[login] failed on /${audience === "admin" ? "admin" : "login"}: username="${username}" (${why})`);
+    await recordFailure(rules);
     return { error: "Incorrect username or password." };
   }
 
@@ -37,6 +47,7 @@ export async function login(_: LoginState, formData: FormData): Promise<LoginSta
   if (audience === "admin" && !isAdmin) return { error: "This account isn't an administrator. Sign in on the main login page." };
   if (audience === "user" && isAdmin) return { error: "Administrators sign in on the administrator login page." };
 
+  await clearFailures(rules[0].key);
   await createSession(user.id);
   redirect("/");
 }

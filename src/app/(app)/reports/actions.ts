@@ -6,8 +6,7 @@ import { currentPeriod, isPeriod, monthLabel, recentPeriods } from "@/lib/period
 import { getReport, notifyRole, readData, validateForSubmit, type Kind } from "@/lib/reports";
 import { UUID, refresh, type FormState } from "@/lib/action-utils";
 
-const MAX_BYTES = 10 * 1024 * 1024;
-const MAX_FILES = 10;
+import { MAX_FILES_PER_REPORT as MAX_FILES, MAX_UPLOAD_BYTES, MAX_UPLOAD_LABEL } from "@/lib/limits";
 const ALLOWED = new Set(["pdf", "xls", "xlsx", "csv", "png", "jpg", "jpeg", "gif", "webp"]);
 
 /** Starts a report for the chosen month (field `period`): this reporting month or any of the previous eleven. */
@@ -44,10 +43,12 @@ export async function saveReport(_: FormState, fd: FormData): Promise<FormState>
   if (files.length) {
     const [{ n }] = await sql<{ n: number }[]>`SELECT count(*)::int AS n FROM report_attachments WHERE report_id = ${id}`;
     if (n + files.length > MAX_FILES) return { error: `A report can have up to ${MAX_FILES} files.` };
+    if (files.reduce((sum, f) => sum + f.size, 0) > MAX_UPLOAD_BYTES) {
+      return { error: `Attach up to ${MAX_UPLOAD_LABEL} of files at a time. Save, then attach the rest.` };
+    }
     for (const f of files) {
       const ext = f.name.split(".").pop()?.toLowerCase() ?? "";
       if (!ALLOWED.has(ext)) return { error: `${f.name}: use a PDF, Excel or image file.` };
-      if (f.size > MAX_BYTES) return { error: `${f.name} is larger than 10 MB.` };
     }
     for (const f of files) {
       await sql`INSERT INTO report_attachments (report_id, filename, content_type, size, data, uploaded_by)

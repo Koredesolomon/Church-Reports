@@ -17,13 +17,13 @@ export default async function MyReports() {
   const [[dept], [current], past, notes] = await Promise.all([
     sql<{ name: string; report_kind: Kind }[]>`SELECT name, report_kind FROM departments WHERE id = ${user.department_id}`,
     sql<{ id: string; status: Status; review_comment: string | null; updated_at: string }[]>`
-      SELECT id, status, review_comment, to_char(updated_at, 'FMDD FMMonth, FMHH12:MI am') AS updated_at
+      SELECT id, status, review_comment, to_char(lagos(updated_at), 'FMDD FMMonth, FMHH12:MI am') AS updated_at
       FROM reports WHERE department_id = ${user.department_id} AND period = ${period}`,
     sql<{ id: string; period: string; kind: Kind; status: Status; submitted_at: string | null }[]>`
-      SELECT id, period, kind, status, to_char(submitted_at, 'YYYY-MM-DD') AS submitted_at
+      SELECT id, period, kind, status, to_char(lagos(submitted_at), 'YYYY-MM-DD') AS submitted_at
       FROM reports WHERE department_id = ${user.department_id} AND period <> ${period} ORDER BY period DESC LIMIT 24`,
     sql<Note[]>`
-      SELECT id, title, body, to_char(created_at, 'YYYY-MM-DD') AS created_at, read_at IS NULL AS unread
+      SELECT id, title, body, to_char(lagos(created_at), 'YYYY-MM-DD') AS created_at, read_at IS NULL AS unread
       FROM notifications WHERE user_id = ${user.id} ORDER BY created_at DESC LIMIT 5`,
   ]);
   // Months a new report can still be started for: this reporting month and the previous eleven, minus ones already started.

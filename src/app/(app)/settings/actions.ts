@@ -4,6 +4,7 @@ import { hash, verify } from "@node-rs/argon2";
 import { z } from "zod";
 import { sql } from "@/lib/db";
 import { createSession, destroyUserSessions, getCurrentUser } from "@/lib/session";
+import { clearFailures, lockedForMinutes, lockedMessage, recordFailure } from "@/lib/throttle";
 import type { FormState } from "@/lib/action-utils";
 
 const schema = z
@@ -24,10 +25,17 @@ export async function changePassword(_: FormState, formData: FormData): Promise<
   const parsed = schema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return { error: parsed.error.issues[0].message };
 
+  // Guessing the current password from a stolen session is limited the same way as signing in.
+  const rules = [{ key: `pw:${user.id}`, max: 5 }];
+  const locked = await lockedForMinutes(rules);
+  if (locked > 0) return { error: lockedMessage(locked) };
+
   const [row] = await sql<{ password_hash: string }[]>`SELECT password_hash FROM users WHERE id = ${user.id}`;
   if (!(await verify(row.password_hash, parsed.data.current).catch(() => false))) {
+    await recordFailure(rules);
     return { error: "Your current password is incorrect." };
   }
+  await clearFailures(rules[0].key);
 
   await sql`UPDATE users SET password_hash = ${await hash(parsed.data.next)}, must_change_password = false WHERE id = ${user.id}`;
   await destroyUserSessions(user.id); // signs out every other device

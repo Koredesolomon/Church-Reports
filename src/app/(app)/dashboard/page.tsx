@@ -3,7 +3,7 @@ import Link from "next/link";
 import { requireStaff } from "@/lib/dal";
 import { sql } from "@/lib/db";
 import { CHURCH_NAME } from "@/lib/config";
-import { addMonths, currentPeriod, dueDate, isOverdue, isPeriod, longDate, monthLabel, monthShort, recentPeriods, shortDate, todayStr } from "@/lib/periods";
+import { addMonths, currentPeriod, dueDate, isOverdue, isPeriod, longDate, monthLabel, monthShort, recentPeriods, shortDate, timeOfDay, todayStr, yesterdayStr } from "@/lib/periods";
 import { KIND_LABEL, trackingStart, type Kind, type Status } from "@/lib/reports";
 import { Chip } from "@/components/ui";
 import { Card, CardHead, DashIcons, Delta, Donut, IconTile } from "@/components/dash";
@@ -49,10 +49,10 @@ export default async function Dashboard({ searchParams }: PageProps<"/dashboard"
     countsFor(m, total, m >= start),
     countsFor(prev, total, prev >= start),
     sql<{ period: string; n: number }[]>`
-      SELECT period, count(*) FILTER (WHERE status <> 'draft' AND submitted_at::date <= (period + interval '1 month' + interval '4 days')::date)::int AS n
+      SELECT period, count(*) FILTER (WHERE status <> 'draft' AND lagos(submitted_at)::date <= (period + interval '1 month' + interval '4 days')::date)::int AS n
       FROM reports WHERE period = ANY(${trendPeriods}) GROUP BY period`,
     sql<{ active: number; joined: number }[]>`
-      SELECT count(*) FILTER (WHERE status = 'active')::int AS active, count(*) FILTER (WHERE date_joined >= date_trunc('month', now()))::int AS joined FROM members`,
+      SELECT count(*) FILTER (WHERE status = 'active')::int AS active, count(*) FILTER (WHERE date_joined >= date_trunc('month', lagos(now()))::date)::int AS joined FROM members`,
     sql<{ id: string; department: string; kind: Kind; status: Status; at: Date; by: string | null; comment: string | null }[]>`
       SELECT r.id, d.name AS department, r.kind, r.status, r.submitted_at AS at, u.name AS by, r.review_comment AS comment
       FROM reports r JOIN departments d ON d.id = r.department_id LEFT JOIN users u ON u.id = r.submitted_by
@@ -85,7 +85,7 @@ export default async function Dashboard({ searchParams }: PageProps<"/dashboard"
 
   // Activity feed grouped by day
   const today = todayStr();
-  const yesterday = (() => { const d = new Date(); d.setDate(d.getDate() - 1); return todayStr(d); })();
+  const yesterday = yesterdayStr();
   const dayOf = (d: Date) => todayStr(new Date(d));
   const groups: { label: string; items: Ev[] }[] = [];
   for (const e of events) {
@@ -95,7 +95,7 @@ export default async function Dashboard({ searchParams }: PageProps<"/dashboard"
     if (g) g.items.push(e);
     else groups.push({ label, items: [e] });
   }
-  const timeOf = (d: Date) => new Date(d).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
+  const timeOf = timeOfDay;
 
   const donut = [
     { label: "Approved", value: now.approved, color: NAVY },

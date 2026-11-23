@@ -1,4 +1,4 @@
-import { DUE_DAY } from "./config";
+import { APP_TIMEZONE, DUE_DAY } from "./config";
 
 // Periods are the first day of a month as "YYYY-MM-01". All date maths here is on plain strings,
 // so it never shifts by timezone.
@@ -6,8 +6,20 @@ import { DUE_DAY } from "./config";
 const pad = (n: number) => String(n).padStart(2, "0");
 const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 
+const ymdFormat = new Intl.DateTimeFormat("en-CA", { timeZone: APP_TIMEZONE, year: "numeric", month: "2-digit", day: "2-digit" });
+
+/** The calendar date ("YYYY-MM-DD") of a moment, in the app's timezone. */
 export function todayStr(now = new Date()) {
-  return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+  return ymdFormat.format(now);
+}
+
+export function yesterdayStr(now = new Date()) {
+  return todayStr(new Date(now.getTime() - 24 * 60 * 60 * 1000));
+}
+
+/** "14:05" in the app's timezone. */
+export function timeOfDay(d: Date | string) {
+  return new Date(d).toLocaleTimeString("en-GB", { timeZone: APP_TIMEZONE, hour: "2-digit", minute: "2-digit" });
 }
 
 export function addMonths(period: string, n: number) {
@@ -18,7 +30,7 @@ export function addMonths(period: string, n: number) {
 
 /** The month currently being reported on: last calendar month (October's report is filed in early November). */
 export function currentPeriod(now = new Date()) {
-  return addMonths(`${now.getFullYear()}-${pad(now.getMonth() + 1)}-01`, -1);
+  return addMonths(`${todayStr(now).slice(0, 7)}-01`, -1);
 }
 
 /** Latest first. */
@@ -71,5 +83,5 @@ export function timeAgo(then: Date, now = new Date()) {
   if (hrs < 24) return `${hrs} ${hrs === 1 ? "hour" : "hours"} ago`;
   const days = Math.floor(hrs / 24);
   if (days < 7) return `${days} ${days === 1 ? "day" : "days"} ago`;
-  return shortDate(todayStr(then), then.getFullYear() !== now.getFullYear());
+  return shortDate(todayStr(then), todayStr(then).slice(0, 4) !== todayStr(now).slice(0, 4));
 }

@@ -4,8 +4,8 @@ const nextConfig: NextConfig = {
   /* config options here */
   cacheComponents: true,
   experimental: {
-    // Report attachments can be up to 10 MB each, several per submission.
-    serverActions: { bodySizeLimit: "60mb" },
+    // Attachments are capped at 4 MB per save (src/lib/limits.ts); the extra room covers the rest of the form.
+    serverActions: { bodySizeLimit: "5mb" },
   },
   partialPrefetching: true,
   turbopack: {

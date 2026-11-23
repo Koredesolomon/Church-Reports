@@ -10,7 +10,7 @@ export const instant = false;
 export default async function NotificationsPage() {
   const user = await requireHead();
   const notes = await sql<{ id: string; title: string; body: string | null; created_at: string; unread: boolean }[]>`
-    SELECT id, title, body, to_char(created_at, 'YYYY-MM-DD') AS created_at, read_at IS NULL AS unread
+    SELECT id, title, body, to_char(lagos(created_at), 'YYYY-MM-DD') AS created_at, read_at IS NULL AS unread
     FROM notifications WHERE user_id = ${user.id} ORDER BY created_at DESC LIMIT 100`;
   return (
     <div className="flex max-w-3xl flex-col gap-6">
