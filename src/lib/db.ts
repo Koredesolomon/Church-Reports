@@ -13,7 +13,10 @@ function client(): Sql {
     if (!url) throw new Error("DATABASE_URL is not set");
     // Reuse one client across dev hot reloads to avoid exhausting connections.
     globalThis.__sql = postgres(url, {
-      max: 10,
+      // Serverless platforms run many short-lived instances, so each keeps only a couple of connections
+      // (use the provider's pooled connection string) and lets idle ones go quickly.
+      max: process.env.VERCEL ? 2 : 10,
+      idle_timeout: process.env.VERCEL ? 20 : 0,
       // Return `date` columns as "YYYY-MM-DD" strings instead of Date objects (no timezone shifts).
       types: { date: { to: 1082, from: [1082], serialize: (x: unknown) => String(x), parse: (x: string) => x } },
     });

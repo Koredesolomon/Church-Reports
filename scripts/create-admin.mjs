@@ -5,7 +5,8 @@
 import postgres from "postgres";
 import { hash } from "@node-rs/argon2";
 
-const { DATABASE_URL, ADMIN_NAME, ADMIN_USERNAME, ADMIN_PASSWORD } = process.env;
+const { ADMIN_NAME, ADMIN_USERNAME, ADMIN_PASSWORD } = process.env;
+const DATABASE_URL = process.env.DATABASE_URL_UNPOOLED ?? process.env.DATABASE_URL; // direct connection preferred
 const missing = Object.entries({ DATABASE_URL, ADMIN_NAME, ADMIN_USERNAME, ADMIN_PASSWORD }).filter(([, v]) => !v).map(([k]) => k);
 if (missing.length) {
   console.error(`Set these in .env.local first: ${missing.join(", ")}`);

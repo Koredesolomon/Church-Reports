@@ -3,7 +3,8 @@ import postgres from "postgres";
 import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 
-const url = process.env.DATABASE_URL;
+// Migrations run over the direct (non-pooled) connection when there is one: DDL and multi-statement scripts belong there.
+const url = process.env.DATABASE_URL_UNPOOLED ?? process.env.DATABASE_URL;
 if (!url) {
   console.error("DATABASE_URL is not set");
   process.exit(1);
