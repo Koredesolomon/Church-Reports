@@ -35,7 +35,8 @@ export type ReportRow = {
   file_count: number;
 };
 
-const SELECT = sql`
+// A function, not a constant: building the fragment must not touch the database settings when this file is imported (e.g. during `next build`).
+const selectReport = () => sql`
   SELECT r.id, r.department_id, d.name AS department, r.period, r.kind, r.status, r.data,
          u.name AS submitted_by_name, to_char(lagos(r.submitted_at), 'YYYY-MM-DD') AS submitted_at,
          to_char(lagos(r.reviewed_at), 'YYYY-MM-DD') AS reviewed_at, r.review_comment,
@@ -44,7 +45,7 @@ const SELECT = sql`
   FROM reports r JOIN departments d ON d.id = r.department_id LEFT JOIN users u ON u.id = r.submitted_by`;
 
 export async function getReport(id: string): Promise<ReportRow | null> {
-  const [r] = await sql<ReportRow[]>`${SELECT} WHERE r.id = ${id}`;
+  const [r] = await sql<ReportRow[]>`${selectReport()} WHERE r.id = ${id}`;
   return r ?? null;
 }
 
