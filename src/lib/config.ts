@@ -11,5 +11,5 @@ export type DeptLike = { name: string; full_name: string | null };
 /** e.g. "FWI (Foursquare Women International)" */
 export const deptLabel = (d: DeptLike) => (d.full_name ? `${d.name} (${d.full_name})` : d.name);
 
-/** Opened by the Instagram icon on the sign-in screens. Set this to your church's Instagram page. */
-export const INSTAGRAM_URL = "https://www.instagram.com/";
+/** Opened by the Instagram icon on the sign-in screens. */
+export const INSTAGRAM_URL = "https://www.instagram.com/thehouseofdavid_hod";
