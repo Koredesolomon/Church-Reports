@@ -32,7 +32,7 @@ export async function login(_: LoginState, formData: FormData): Promise<LoginSta
   }
 
   const [user] = await sql<{ id: string; password_hash: string; role: string; active: boolean }[]>`
-    SELECT id, password_hash, role, active FROM users WHERE lower(username) = lower(${username})`;
+    SELECT id, password_hash, role, active FROM users WHERE lower(username) = lower(${username}) AND deleted_at IS NULL`;
   const ok = await verify(user?.password_hash ?? (await DUMMY_HASH), password).catch(() => false);
   if (!user || !user.active || !ok) {
     // Server-side diagnostics only: the password is never logged, and the visitor still gets one generic message.

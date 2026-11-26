@@ -14,7 +14,7 @@ export default async function UsersPage() {
   const [users, free] = await Promise.all([
     sql<{ id: string; name: string; username: string; role: Role; department: string | null; active: boolean; must_change_password: boolean }[]>`
       SELECT u.id, u.name, u.username, u.role, d.name AS department, u.active, u.must_change_password
-      FROM users u LEFT JOIN departments d ON d.id = u.department_id ORDER BY u.active DESC, u.role, lower(u.name)`,
+      FROM users u LEFT JOIN departments d ON d.id = u.department_id WHERE u.deleted_at IS NULL ORDER BY u.active DESC, u.role, lower(u.name)`,
     sql<{ id: string; name: string; full_name: string | null }[]>`
       SELECT d.id, d.name, d.full_name FROM departments d
       WHERE d.active AND NOT EXISTS (SELECT 1 FROM users u WHERE u.department_id = d.id) ORDER BY d.sort_order, d.name`,

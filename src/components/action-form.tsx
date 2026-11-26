@@ -9,8 +9,6 @@ export default function ActionForm({
   className,
   id,
   resetOnSuccess = false,
-  confirmValue,
-  confirmText = "Are you sure?",
   noStatus = false,
 }: {
   action: (state: State, formData: FormData) => Promise<State>;
@@ -18,9 +16,6 @@ export default function ActionForm({
   className?: string;
   id?: string;
   resetOnSuccess?: boolean;
-  /** Ask for confirmation when the submitting button has this value. */
-  confirmValue?: string;
-  confirmText?: string;
   noStatus?: boolean;
 }) {
   const ref = useRef<HTMLFormElement>(null);
@@ -36,10 +31,6 @@ export default function ActionForm({
       ref={ref}
       action={formAction}
       className={className}
-      onSubmit={(e) => {
-        const submitter = (e.nativeEvent as SubmitEvent).submitter as HTMLButtonElement | null;
-        if (confirmValue && submitter?.value === confirmValue && !confirm(confirmText)) e.preventDefault();
-      }}
     >
       <fieldset disabled={pending} className="contents">{children}</fieldset>
       {!noStatus && state?.error && <p role="alert" className="text-sm font-medium text-late-ink">{state.error}</p>}

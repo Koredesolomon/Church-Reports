@@ -20,7 +20,7 @@ if (!/^[A-Za-z0-9._@-]{3,40}$/.test(ADMIN_USERNAME)) {
 const sql = postgres(DATABASE_URL, { max: 1 });
 try {
   const passwordHash = await hash(ADMIN_PASSWORD);
-  const [existing] = await sql`SELECT id FROM users WHERE role = 'admin' ORDER BY created_at LIMIT 1`;
+  const [existing] = await sql`SELECT id FROM users WHERE role = 'admin' AND deleted_at IS NULL ORDER BY created_at LIMIT 1`;
   if (existing) {
     await sql`UPDATE users SET name = ${ADMIN_NAME}, username = ${ADMIN_USERNAME}, password_hash = ${passwordHash},
               must_change_password = false, active = true WHERE id = ${existing.id}`;

@@ -1,6 +1,7 @@
 "use client";
 import { useActionState } from "react";
 import { userAction } from "@/app/(app)/users/actions";
+import ConfirmButton from "@/components/confirm-button";
 import SecretBox from "@/components/secret-box";
 
 export type UserRowData = { id: string; name: string; username: string; roleLabel: string; department: string | null; active: boolean; mustChange: boolean };
@@ -20,6 +21,22 @@ export default function UserRow({ u, isSelf }: { u: UserRowData; isSelf: boolean
             {u.active && <button disabled={pending} name="intent" value="reset" className="linkbtn">Reset password</button>}
             {u.active && !isSelf && <><span aria-hidden className="text-muted">·</span><button disabled={pending} name="intent" value="deactivate" className="linkbtn">Deactivate</button></>}
             {!u.active && <button disabled={pending} name="intent" value="reactivate" className="linkbtn">Reactivate</button>}
+            {!isSelf && (
+              <>
+                <span aria-hidden className="text-muted">·</span>
+                <ConfirmButton
+                  label="Delete"
+                  className="linkbtn !text-late-ink"
+                  disabled={pending}
+                  name="intent"
+                  value="delete"
+                  title="Delete this user?"
+                  confirmLabel="Delete user"
+                >
+                  <strong className="text-ink">{u.name}</strong> ({u.username}) will no longer be able to sign in. This can&apos;t be undone.
+                </ConfirmButton>
+              </>
+            )}
           </form>
         </td>
       </tr>
