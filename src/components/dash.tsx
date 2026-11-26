@@ -8,7 +8,7 @@ export const Card = ({ children, className = "" }: { children: ReactNode; classN
 
 export function CardHead({ title, sub, right }: { title: string; sub?: string; right?: ReactNode }) {
   return (
-    <div className="flex items-start justify-between gap-3">
+    <div className="flex flex-wrap items-start justify-between gap-3">
       <div>
         <h2 className="m-0 text-base font-semibold">{title}</h2>
         {sub && <p className="m-0 mt-0.5 text-[13px] text-muted">{sub}</p>}

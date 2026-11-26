@@ -164,8 +164,8 @@ export default async function Dashboard({ searchParams }: PageProps<"/dashboard"
           <Card className="flex flex-col gap-5 p-5">
             <CardHead title="On-time reports" sub="Submitted by the 5th, last six months" right={
               <ul className="m-0 flex list-none gap-4 p-0 text-xs text-ink-2" aria-label="Legend">
-                <li className="flex items-center gap-1.5"><span className="size-2.5 rounded-sm" style={{ background: NAVY }} />On time</li>
-                <li className="flex items-center gap-1.5"><span className="size-2.5 rounded-sm" style={{ background: GOLD }} />Late or missing</li>
+                <li className="flex items-center gap-1.5 whitespace-nowrap"><span className="size-2.5 shrink-0 rounded-sm" style={{ background: NAVY }} />On time</li>
+                <li className="flex items-center gap-1.5 whitespace-nowrap"><span className="size-2.5 shrink-0 rounded-sm" style={{ background: GOLD }} />Late or missing</li>
               </ul>} />
             <div className="flex flex-col gap-0.5">
               <span className="text-xs text-muted">On time in {monthLabel(m)}</span>
