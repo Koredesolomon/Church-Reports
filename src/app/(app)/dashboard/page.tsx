@@ -6,7 +6,9 @@ import { CHURCH_NAME } from "@/lib/config";
 import { addMonths, currentPeriod, dueDate, isOverdue, isPeriod, longDate, monthLabel, monthShort, recentPeriods, shortDate, timeOfDay, todayStr, yesterdayStr } from "@/lib/periods";
 import { KIND_LABEL, trackingStart, type Kind, type Status } from "@/lib/reports";
 import { Chip } from "@/components/ui";
-import { Card, CardHead, DashIcons, Delta, Donut, IconTile } from "@/components/dash";
+import MonthPicker from "@/components/month-picker";
+import { Card, CardHead, Donut } from "@/components/dash";
+import HeaderBell from "@/components/header-bell";
 
 // Reads the session cookie, so this route renders per request (opts out of the static shell under Cache Components).
 export const instant = false;
@@ -35,7 +37,6 @@ export default async function Dashboard({ searchParams }: PageProps<"/dashboard"
   const isAdmin = user.role === "admin";
   const sp = await searchParams;
   const m = typeof sp.m === "string" && isPeriod(sp.m) ? sp.m : currentPeriod();
-  const prev = addMonths(m, -1);
   const start = await trackingStart();
   const trendPeriods = [5, 4, 3, 2, 1, 0].map((i) => addMonths(m, -i));
 
@@ -45,9 +46,8 @@ export default async function Dashboard({ searchParams }: PageProps<"/dashboard"
       WHERE d.active ORDER BY d.sort_order, d.name`,
   ]);
   const total = depts.length;
-  const [now, before, trend, [mem], recent, status, events] = await Promise.all([
+  const [now, trend, [mem], recent, status, events] = await Promise.all([
     countsFor(m, total, m >= start),
-    countsFor(prev, total, prev >= start),
     sql<{ period: string; n: number }[]>`
       SELECT period, count(*) FILTER (WHERE status <> 'draft' AND lagos(submitted_at)::date <= (period + interval '1 month' + interval '4 days')::date)::int AS n
       FROM reports WHERE period = ANY(${trendPeriods}) GROUP BY period`,
@@ -68,7 +68,6 @@ export default async function Dashboard({ searchParams }: PageProps<"/dashboard"
       ORDER BY at DESC LIMIT 8`,
   ]);
   const tracked = m >= start;
-  const waiting = now.submitted;
   const overdue = isOverdue(m);
   const byDept = new Map(status.map((r) => [r.department_id, r.status]));
   const toChase = tracked ? depts.filter((d) => { const s = byDept.get(d.id); return !s || s === "draft" || s === "returned"; }) : [];
@@ -104,10 +103,6 @@ export default async function Dashboard({ searchParams }: PageProps<"/dashboard"
     { label: tracked && overdue ? "Late" : "Not submitted", value: now.missing, color: RED },
   ];
 
-  const quick = isAdmin
-    ? [["/reviews", "Review queue", DashIcons.inbox, waiting], ["/tracker", "Missing reports", DashIcons.clock, 0], ["/archive", "Archive", DashIcons.archive, 0], ["/members", "Members", DashIcons.users, 0]] as const
-    : [["/archive", "Archive", DashIcons.archive, 0], ["/members", "Members", DashIcons.users, 0]] as const;
-
   return (
     <div className="flex flex-col gap-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -115,52 +110,33 @@ export default async function Dashboard({ searchParams }: PageProps<"/dashboard"
           <h1 className="m-0 text-[26px] font-bold tracking-tight">Dashboard</h1>
           <span className="text-sm text-muted">{isAdmin ? `A summary of ${monthLabel(m)}.` : "A summary of the month. You can view, not edit."}</span>
         </div>
-        <form method="get" className="compact flex items-center gap-2">
-          <label htmlFor="m" className="sr-only">Month</label>
-          <select id="m" name="m" defaultValue={m} className="h-11 rounded-full border border-line bg-white px-4 text-sm font-medium">
-            {recentPeriods(12).map((p) => <option key={p} value={p}>{monthLabel(p)}</option>)}
-          </select>
-          <button className="btn ghost !h-11 !rounded-full">Show</button>
-        </form>
+        <div className="relative z-20 flex w-full items-center justify-between gap-3 sm:w-auto">
+          <MonthPicker label="Month" hideLabel value={m} periods={recentPeriods(12)} className="!h-11 !rounded-full !border-line !pl-4 !text-sm font-medium" />
+          <HeaderBell />
+        </div>
       </div>
 
-      <div className="grid items-start gap-5 xl:grid-cols-[19rem_minmax(0,1fr)_21rem]">
+      <div className="grid items-start gap-5 xl:grid-cols-[19rem_minmax(0,1fr)_21rem] xl:grid-rows-[auto_auto_1fr]">
+        {/* ---- summary, across the left and middle columns ---- */}
+        <section aria-label="Summary" className="relative flex min-h-[200px] xl:col-span-2 flex-col justify-between gap-6 overflow-hidden rounded-2xl bg-[#232672] p-5 text-white">
+          <span aria-hidden className="pointer-events-none absolute -right-10 -top-10 size-44 rounded-full bg-white/[.06]" />
+          <span aria-hidden className="pointer-events-none absolute -bottom-16 right-6 size-40 rounded-full bg-white/[.05]" />
+          <div className="relative flex items-center gap-2.5">
+            <Image src="/logo.webp" alt="" width={32} height={32} className="size-8 rounded-lg bg-white object-contain p-0.5" />
+            <span className="text-sm font-semibold">{CHURCH_NAME}</span>
+          </div>
+          <div className="relative flex flex-col gap-1">
+            <span className="text-lg font-semibold">{monthLabel(m)}</span>
+            <span className="text-xs text-white/70">Reports approved</span>
+            <div className="flex items-end justify-between gap-3">
+              <span className="text-[34px] font-bold leading-none tracking-tight">{now.approved} <span className="text-lg font-medium text-white/70">of {total}</span></span>
+              <span className="text-right text-xs leading-tight text-white/70">Due<br /><strong className="text-sm text-white">{shortDate(dueDate(m))}</strong></span>
+            </div>
+          </div>
+        </section>
+
         {/* ---- left column ---- */}
-        <div className="flex flex-col gap-5">
-          <section aria-label="Summary" className="relative flex min-h-[200px] flex-col justify-between gap-6 overflow-hidden rounded-2xl bg-[#232672] p-5 text-white">
-            <span aria-hidden className="pointer-events-none absolute -right-10 -top-10 size-44 rounded-full bg-white/[.06]" />
-            <span aria-hidden className="pointer-events-none absolute -bottom-16 right-6 size-40 rounded-full bg-white/[.05]" />
-            <div className="relative flex items-center gap-2.5">
-              <Image src="/logo.webp" alt="" width={32} height={32} className="size-8 rounded-lg bg-white object-contain p-0.5" />
-              <span className="text-sm font-semibold">{CHURCH_NAME}</span>
-            </div>
-            <div className="relative flex flex-col gap-1">
-              <span className="text-lg font-semibold">{monthLabel(m)}</span>
-              <span className="text-xs text-white/70">Reports approved</span>
-              <div className="flex items-end justify-between gap-3">
-                <span className="text-[34px] font-bold leading-none tracking-tight">{now.approved} <span className="text-lg font-medium text-white/70">of {total}</span></span>
-                <span className="text-right text-xs leading-tight text-white/70">Due<br /><strong className="text-sm text-white">{shortDate(dueDate(m))}</strong></span>
-              </div>
-            </div>
-          </section>
-
-          <nav aria-label="Shortcuts" className="grid gap-2 rounded-2xl bg-brand-soft p-2" style={{ gridTemplateColumns: `repeat(${quick.length}, minmax(0, 1fr))` }}>
-            {quick.map(([href, label, icon, badge]) => (
-              <Link key={href} href={href} className="relative flex flex-col items-center gap-1.5 rounded-xl px-1 py-3 text-center text-xs font-medium text-ink no-underline hover:bg-white/70">
-                <span className="grid size-9 place-items-center rounded-lg border border-brand/25 text-brand [&>svg]:size-5">{icon}</span>
-                {label}
-                {badge > 0 && <span className="absolute right-2 top-1.5 grid h-4 min-w-4 place-items-center rounded-full bg-brand-red px-1 text-[10px] font-bold leading-none text-white">{badge}</span>}
-              </Link>
-            ))}
-          </nav>
-
-          <Card className="flex flex-col gap-3 p-5">
-            <CardHead title="Submitted so far" right={<span className="text-sm font-semibold">{pct(submittedCount, total)}%</span>} />
-            <p className="m-0 text-sm"><strong>{submittedCount}</strong> <span className="text-muted">of {total} departments</span></p>
-            <div role="progressbar" aria-valuemin={0} aria-valuemax={total} aria-valuenow={submittedCount} aria-label="Departments that have submitted" className="h-2 overflow-hidden rounded-full bg-[#ffe9b3]">
-              <div className="h-full rounded-full bg-brand" style={{ width: `${pct(submittedCount, total)}%` }} />
-            </div>
-          </Card>
+        <div className="flex flex-col gap-5 xl:col-start-1 xl:row-start-2 xl:self-stretch [&>section]:flex-1">
 
           <Card className="flex flex-col gap-3 p-5">
             <CardHead title={tracked && overdue ? "Late reports" : "Still to submit"} right={isAdmin ? <Link href="/tracker" className="text-[13px] font-medium">View all</Link> : undefined} />
@@ -184,21 +160,7 @@ export default async function Dashboard({ searchParams }: PageProps<"/dashboard"
         </div>
 
         {/* ---- middle column ---- */}
-        <div className="flex min-w-0 flex-col gap-5">
-          <div className="grid gap-4 sm:grid-cols-3">
-            {([
-              ["Approved", now.approved, before.approved, DashIcons.check, true, "Total approved"],
-              ["Waiting", now.submitted, before.submitted, DashIcons.hourglass, true, "Waiting for review"],
-              [tracked && overdue ? "Late" : "Not submitted", now.missing, before.missing, DashIcons.alert, false, tracked && overdue ? "Late, not submitted" : "Not yet submitted"],
-            ] as const).map(([key, n, b, icon, goodUp, label]) => (
-              <Card key={key} className="flex flex-col gap-3 p-4">
-                <div className="flex items-center justify-between"><IconTile>{icon}</IconTile></div>
-                <Delta now={n} before={b} label={monthShort(prev)} goodWhenUp={goodUp} />
-                <div><div className="text-[28px] font-bold leading-none tracking-tight">{n}<span className="ml-1 text-sm font-medium text-muted">/ {total}</span></div><div className="mt-1.5 text-sm text-ink-2">{label}</div></div>
-              </Card>
-            ))}
-          </div>
-
+        <div className="flex min-w-0 flex-col gap-5 xl:col-start-2 xl:row-start-2">
           <Card className="flex flex-col gap-5 p-5">
             <CardHead title="On-time reports" sub="Submitted by the 5th, last six months" right={
               <ul className="m-0 flex list-none gap-4 p-0 text-xs text-ink-2" aria-label="Legend">
@@ -234,33 +196,34 @@ export default async function Dashboard({ searchParams }: PageProps<"/dashboard"
               </div>
             </div>
           </Card>
-
-          <Card className="flex flex-col gap-4 p-5">
-            <CardHead title="Recent submissions" sub={`Reports for ${monthLabel(m)}`} right={isAdmin ? <Link href="/reviews" className="text-[13px] font-medium">Open review queue</Link> : undefined} />
-            <div className="overflow-x-auto">
-              <table className="min-w-[640px] w-full border-collapse text-left text-sm">
-                <thead><tr className="bg-brand-soft text-[13px] text-ink-2">
-                  <th className="rounded-l-lg px-3.5 py-2.5 font-medium">Report</th><th className="px-3.5 font-medium">Date &amp; time</th><th className="px-3.5 font-medium">Submitted by</th><th className="px-3.5 font-medium">Note</th><th className="rounded-r-lg px-3.5 font-medium">Status</th>
-                </tr></thead>
-                <tbody>
-                  {recent.map((r) => (
-                    <tr key={r.id} className="border-b border-line-soft last:border-0">
-                      <td className="px-3.5 py-3"><Link href={`/reports/${r.id}`} className="block font-semibold text-ink no-underline hover:underline">{r.department}</Link><span className="text-xs text-muted">{KIND_LABEL[r.kind]}</span></td>
-                      <td className="px-3.5 py-3">{r.at ? <>{shortDate(todayStr(new Date(r.at)), true)}<br /><span className="text-xs text-muted">{timeOf(r.at)}</span></> : "—"}</td>
-                      <td className="px-3.5 py-3">{r.by ?? "—"}</td>
-                      <td className="max-w-[16rem] px-3.5 py-3 text-xs text-ink-2"><span className="line-clamp-2">{r.status === "returned" && r.comment ? r.comment : "—"}</span></td>
-                      <td className="px-3.5 py-3"><Chip status={r.status} /></td>
-                    </tr>
-                  ))}
-                  {recent.length === 0 && <tr><td colSpan={5} className="py-8 text-center text-muted">No reports submitted for {monthLabel(m)} yet.</td></tr>}
-                </tbody>
-              </table>
-            </div>
-          </Card>
         </div>
 
+        {/* ---- recent submissions, filling the space below both columns ---- */}
+        <Card className="flex min-w-0 flex-col gap-4 p-5 xl:col-span-2 xl:col-start-1 xl:row-start-3 xl:self-stretch">
+          <CardHead title="Recent submissions" sub={`Reports for ${monthLabel(m)}`} right={isAdmin ? <Link href="/reviews" className="text-[13px] font-medium">Open review queue</Link> : undefined} />
+          <div className="overflow-x-auto">
+            <table className="min-w-[640px] w-full border-collapse text-left text-sm">
+              <thead><tr className="bg-brand-soft text-[13px] text-ink-2">
+                <th className="rounded-l-lg px-3.5 py-2.5 font-medium">Report</th><th className="px-3.5 font-medium">Date &amp; time</th><th className="px-3.5 font-medium">Submitted by</th><th className="px-3.5 font-medium">Note</th><th className="rounded-r-lg px-3.5 font-medium">Status</th>
+              </tr></thead>
+              <tbody>
+                {recent.map((r) => (
+                  <tr key={r.id} className="border-b border-line-soft last:border-0">
+                    <td className="px-3.5 py-3"><Link href={`/reports/${r.id}`} className="block font-semibold text-ink no-underline hover:underline">{r.department}</Link><span className="text-xs text-muted">{KIND_LABEL[r.kind]}</span></td>
+                    <td className="px-3.5 py-3">{r.at ? <>{shortDate(todayStr(new Date(r.at)), true)}<br /><span className="text-xs text-muted">{timeOf(r.at)}</span></> : "—"}</td>
+                    <td className="px-3.5 py-3">{r.by ?? "—"}</td>
+                    <td className="max-w-[16rem] px-3.5 py-3 text-xs text-ink-2"><span className="line-clamp-2">{r.status === "returned" && r.comment ? r.comment : "—"}</span></td>
+                    <td className="px-3.5 py-3"><Chip status={r.status} /></td>
+                  </tr>
+                ))}
+                {recent.length === 0 && <tr><td colSpan={5} className="py-8 text-center text-muted">No reports submitted for {monthLabel(m)} yet.</td></tr>}
+              </tbody>
+            </table>
+          </div>
+        </Card>
+
         {/* ---- right column ---- */}
-        <div className="flex flex-col gap-5">
+        <div className="flex flex-col gap-5 xl:col-start-3 xl:row-span-3 xl:row-start-1">
           <Card className="flex flex-col gap-5 p-5">
             <CardHead title="Statistic" sub={monthLabel(m)} />
             <Donut segments={donut.map((d) => ({ value: d.value, color: d.color }))} total={tracked ? total : submittedCount} label={tracked ? "Departments" : "Submitted"} />

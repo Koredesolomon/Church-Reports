@@ -132,3 +132,14 @@ select,
   cursor: pointer;
 }
 select:disabled { cursor: default; opacity: 0.6; }
+
+/* Printing (the Annual summary): drop the navigation and controls, keep colours on the status marks. */
+@media print {
+  aside, .no-print { display: none !important; }
+  main { padding: 0 !important; }
+  body { background: #fff; }
+  .card { break-inside: avoid-page; }
+  .chip { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .tbl { min-width: 0 !important; font-size: 11px; }
+  .tbl th, .tbl td { padding: 4px 3px !important; }
+}

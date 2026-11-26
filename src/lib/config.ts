@@ -4,6 +4,9 @@ export const CHURCH_NAME = "Data Base";
 /** All dates and times are worked out in this timezone, whatever timezone the server runs in (Vercel runs in UTC). */
 export const APP_TIMEZONE = "Africa/Lagos";
 
+/** The church year starts in this month (10 = October), so a year runs October to September. */
+export const YEAR_START_MONTH = 10;
+
 /** Reports are due on this day of the month after the one being reported. */
 export const DUE_DAY = 5;
 

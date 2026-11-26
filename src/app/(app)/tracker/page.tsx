@@ -1,10 +1,12 @@
 import { requireAdmin } from "@/lib/dal";
 import { sql } from "@/lib/db";
-import { addMonths, currentPeriod, isPeriod, monthLabel, monthName, recentPeriods } from "@/lib/periods";
+import { addMonths, currentPeriod, isPeriod, monthName, recentPeriods } from "@/lib/periods";
 import { chipFor, trackingStart, type Status } from "@/lib/reports";
 import ActionForm from "@/components/action-form";
+import MonthPicker from "@/components/month-picker";
 import { Chip, PageHeader, Section } from "@/components/ui";
 import { sendReminder } from "./actions";
+import HeaderBell from "@/components/header-bell";
 
 // Reads the session cookie, so this route renders per request (opts out of the static shell under Cache Components).
 export const instant = false;
@@ -37,12 +39,10 @@ export default async function Tracker({ searchParams }: PageProps<"/tracker">) {
   return (
     <div className="flex flex-col gap-7">
       <PageHeader title="Missing reports" sub="Who has and has not submitted, by department and month.">
-        <form method="get" className="compact flex items-end gap-2">
-          <div className="field !flex-none"><label htmlFor="m">Current month</label>
-            <select id="m" name="m" defaultValue={m}>{periods.map((p) => <option key={p} value={p}>{monthLabel(p)}</option>)}</select>
-          </div>
-          <button className="btn ghost !h-11">Show</button>
-        </form>
+        <div className="relative z-20 flex w-full items-end justify-between gap-3 sm:w-auto">
+          <MonthPicker label="Current month" value={m} periods={periods} />
+          <HeaderBell />
+        </div>
       </PageHeader>
       <div className="flex flex-wrap gap-4">
         {stat(counts.approved, "Approved")}{stat(counts.submitted, "Waiting for review")}{stat(counts.returned, "Returned")}{stat(counts.late, "Late, not submitted", true)}

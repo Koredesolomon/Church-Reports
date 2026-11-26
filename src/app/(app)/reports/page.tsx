@@ -4,7 +4,9 @@ import { sql } from "@/lib/db";
 import { currentPeriod, dueDate, longDate, monthLabel, recentPeriods, shortDate } from "@/lib/periods";
 import { chipFor, KIND_LABEL, KIND_TITLE, type Kind, type Status } from "@/lib/reports";
 import { Chip, PageHeader, Section } from "@/components/ui";
+import MonthOptions from "@/components/month-options";
 import { markAllRead, startReport } from "./actions";
+import HeaderBell from "@/components/header-bell";
 
 // Reads the session cookie, so this route renders per request (opts out of the static shell under Cache Components).
 export const instant = false;
@@ -35,18 +37,21 @@ export default async function MyReports() {
   return (
     <div className="flex flex-col gap-8">
       <PageHeader title="My reports" sub={`${dept.name} · ${KIND_LABEL[dept.report_kind] === "Department report" ? "monthly department report" : KIND_LABEL[dept.report_kind].toLowerCase() + " report"}`}>
-        {startable.length > 0 ? (
-          <form action={startReport} className="compact flex flex-wrap items-end gap-2">
-            <div className="field !flex-none"><label htmlFor="new-month">Month</label>
-              <select id="new-month" name="period" defaultValue={startable[0]}>
-                {startable.map((p) => <option key={p} value={p}>{monthLabel(p)}</option>)}
-              </select>
-            </div>
-            <button className="btn !h-11">New report</button>
-          </form>
-        ) : (
-          <span className="text-sm text-muted">Every recent month already has a report.</span>
-        )}
+        <div className="relative z-20 flex w-full items-end justify-between gap-3 sm:w-auto">
+          {startable.length > 0 ? (
+            <form action={startReport} className="compact flex min-w-0 flex-1 items-end gap-2">
+              <div className="field !min-w-0 !flex-1 sm:!min-w-[200px]"><label htmlFor="new-month">Month</label>
+                <select id="new-month" name="period" defaultValue={startable[0]}>
+                  <MonthOptions periods={startable} />
+                </select>
+              </div>
+              <button className="btn !h-11 shrink-0">New report</button>
+            </form>
+          ) : (
+            <span className="text-sm text-muted">Every recent month already has a report.</span>
+          )}
+          <HeaderBell />
+        </div>
       </PageHeader>
 
       <Section title="Notifications" action={<form action={markAllRead}><button className="linkbtn">Mark all as read</button></form>}>

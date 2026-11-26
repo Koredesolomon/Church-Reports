@@ -6,6 +6,7 @@ import { CHURCH_NAME } from "@/lib/config";
 import type { Role } from "@/lib/users";
 import NavLinks, { type NavItem } from "@/components/nav-links";
 import NotificationBellLoader from "@/components/notification-bell-loader";
+import TopBar from "@/components/top-bar";
 import { logout } from "../login/actions";
 
 async function navFor(role: Role, userId: string): Promise<{ items: NavItem[]; roleLabel: string }> {
@@ -17,6 +18,7 @@ async function navFor(role: Role, userId: string): Promise<{ items: NavItem[]; r
         { href: "/reviews", label: "Review queue" },
         { href: "/tracker", label: "Missing reports" },
         { href: "/archive", label: "Archive" },
+        { href: "/annual", label: "Annual summary" },
         { href: "/members", label: "Members" },
         { href: "/users", label: "Users and departments" },
       ],
@@ -28,6 +30,7 @@ async function navFor(role: Role, userId: string): Promise<{ items: NavItem[]; r
       items: [
         { href: "/dashboard", label: "Dashboard" },
         { href: "/archive", label: "Archive" },
+        { href: "/annual", label: "Annual summary" },
         { href: "/members", label: "Members" },
         { href: "/settings", label: "Settings" },
       ],
@@ -57,24 +60,19 @@ async function SidebarBody() {
   return (
     <>
       <NavLinks items={items} />
-      <div className="mt-auto hidden flex-col gap-0.5 border-t border-line px-2 pt-3 lg:flex">
-        <span className="truncate text-sm font-semibold">{user.name}</span>
-        <span className="text-[13px] text-muted">{label}</span>
-        <form action={logout}><button className="linkbtn mt-2 !no-underline">Sign out</button></form>
+      <div className="mt-auto hidden flex-col gap-2 border-t border-line px-2 pt-3 lg:flex">
+        <div className="flex items-center gap-3">
+          <span aria-hidden className="grid size-10 shrink-0 place-items-center rounded-full bg-brand-soft text-sm font-bold text-brand">
+            {user.name.split(/\s+/).map((w) => w[0]).slice(0, 2).join("").toUpperCase()}
+          </span>
+          <span className="flex min-w-0 flex-col">
+            <span className="truncate text-sm font-semibold">{user.name}</span>
+            <span className="truncate text-[13px] text-muted">{label}</span>
+          </span>
+        </div>
+        <form action={logout}><button className="linkbtn !no-underline">Sign out</button></form>
       </div>
     </>
-  );
-}
-
-async function TopBarUser() {
-  const user = await getCurrentUser();
-  if (!user) return null;
-  const initials = user.name.split(/\s+/).map((w) => w[0]).slice(0, 2).join("").toUpperCase();
-  return (
-    <div className="flex items-center gap-3">
-      <span className="hidden max-w-[12rem] truncate text-[15px] font-semibold sm:block">{user.name}</span>
-      <span aria-hidden className="grid size-11 place-items-center rounded-full bg-brand-soft text-sm font-bold text-brand">{initials}</span>
-    </div>
   );
 }
 
@@ -91,11 +89,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         </div>
         <Suspense fallback={<div className="h-10" />}><SidebarBody /></Suspense>
       </aside>
-      <main className="min-w-0 flex-1 p-4 sm:p-6 lg:p-10">
-        <div className="mb-5 flex items-center justify-end gap-4">
+      <main className="min-w-0 flex-1 p-4 max-sm:pb-[8%] max-sm:pt-[8%] sm:p-6 lg:p-10">
+        <TopBar>
           <Suspense fallback={<span className="block size-11 rounded-xl bg-[#eceef4]" />}><NotificationBellLoader /></Suspense>
-          <Suspense fallback={<span className="block size-11 rounded-full bg-brand-soft" />}><TopBarUser /></Suspense>
-        </div>
+        </TopBar>
         {children}
       </main>
     </div>
