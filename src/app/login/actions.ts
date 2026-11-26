@@ -44,8 +44,8 @@ export async function login(_: LoginState, formData: FormData): Promise<LoginSta
 
   // The password was right, so it is safe to say which screen this account belongs on.
   const isAdmin = user.role === "admin";
-  if (audience === "admin" && !isAdmin) return { error: "This account isn't an administrator. Sign in on the main login page." };
-  if (audience === "user" && isAdmin) return { error: "Administrators sign in on the administrator login page." };
+  if (audience === "admin" && !isAdmin) return { error: "This account isn't an admin. Sign in on the main login page." };
+  if (audience === "user" && isAdmin) return { error: "Admins sign in on the admin login page." };
 
   await clearFailures(rules[0].key);
   await createSession(user.id);

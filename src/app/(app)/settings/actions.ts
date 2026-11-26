@@ -20,7 +20,7 @@ const schema = z
 export async function changePassword(_: FormState, formData: FormData): Promise<FormState> {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
-  if (user.role === "admin") return { error: "The administrator password is changed in the server's environment file." };
+  if (user.role === "admin") return { error: "The admin password is changed in the server's environment file." };
 
   const parsed = schema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return { error: parsed.error.issues[0].message };

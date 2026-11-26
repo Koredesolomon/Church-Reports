@@ -21,7 +21,7 @@ export default function LoginScreen({ audience }: { audience: "admin" | "user" }
             </svg>
           </span>
           <div className="flex flex-col items-center gap-1.5 text-center">
-            <h1 className="m-0 text-[22px] font-bold tracking-tight">{admin ? "Administrator sign in" : "Sign in"}</h1>
+            <h1 className="m-0 text-[22px] font-bold tracking-tight">{admin ? "Admin sign in" : "Sign in"}</h1>
             <p className="m-0 max-w-[260px] text-[14px] leading-relaxed text-muted">
               {admin ? "Review reports, manage members and register users." : "Use the username the church office registered for you."}
             </p>
@@ -30,7 +30,7 @@ export default function LoginScreen({ audience }: { audience: "admin" | "user" }
           {admin && (
             <details className="w-full text-sm text-muted">
               <summary className="cursor-pointer text-right font-medium text-ink-2 marker:content-none hover:text-ink">Forgot password?</summary>
-              <p className="m-0 mt-2 rounded-lg bg-[#f0f2f6] px-3 py-2.5 leading-relaxed">The administrator password is set in the server&apos;s environment file.</p>
+              <p className="m-0 mt-2 rounded-lg bg-[#f0f2f6] px-3 py-2.5 leading-relaxed">The admin password is set in the server&apos;s environment file.</p>
             </details>
           )}
           <div className="flex w-full flex-col items-center gap-3">

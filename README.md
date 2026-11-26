@@ -8,7 +8,7 @@ Built with Next.js (App Router), React, Tailwind and PostgreSQL.
 - **Leadership** has a read-only dashboard, archive and member list.
 
 There is no public sign-up: the admin registers every user and gives them a temporary password.
-Department heads and leadership sign in at `/login`; the administrator signs in at `/admin`.
+Department heads and leadership sign in at `/login`; the admin signs in at `/admin`.
 
 ## Run it locally
 
